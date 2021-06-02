@@ -155,8 +155,7 @@ class pet7018z:
 
         return eng
 
-    # TODO: finish this method
-    def _eng_to_adc(self, eng):
+    def _eng_to_adc(self, channel, eng):
         """Convert a number to an ADC value expected by the instrument.
 
         Paramters
@@ -169,7 +168,23 @@ class pet7018z:
         value : int
             ADC value.
         """
-        pass
+        # get range setting params
+        ai_range_setting = self.ai_ranges[self.get_ai_range(channel)]
+        ai_range_min = ai_range_setting["min"]
+        ai_range_max = ai_range_setting["max"]
+        ai_range = ai_range_max - ai_range_min
+
+        # un-normalise
+        value = (eng - ai_range_min) * (2 ** 16 - 1) / ai_range
+
+        # re-scale from -32768 to 32767
+        value -= 32768
+
+        # re-scale from 0 to 65535 using two's complement
+        if value < 0:
+            value += 1 << 16
+
+        return value
 
     def set_ai_range(self, channel, ai_range):
         """Set an AI range.
@@ -205,7 +220,7 @@ class pet7018z:
         self.instr.write_single_register(427 + channel, ai_range)
 
     def get_ai_range(self, channel):
-        """Set an AI range.
+        """Get an AI range.
 
         Paramters
         ---------
@@ -267,6 +282,46 @@ class pet7018z:
         """
         self.instr.write_single_coil(627, enable)
 
+    def set_cjc_offset(self, channel, offset):
+        """Set the cold junction compensation offset for a channel.
+
+        Parameters
+        ----------
+        channel : int
+            Channel to set, 0-indexed.
+        offset : float
+            Cold junction compensation offset in ADC counts (-9999 to 9999).
+        """
+        if (offset > 9999) or (offset < -9999):
+            raise ValueError(f"Invalid offset: {offset}. Must be >= -9999 and =< 9999.")
+
+        # re-scale from 0 to 65535 using two's complement
+        if offset < 0:
+            offset += 1 << 16
+
+        self.instr.write_single_register(491 + channel, offset)
+
+    def get_cjc_offset(self, channel):
+        """Get the cold junction compensation offset for a channel.
+
+        Parameters
+        ----------
+        channel : int
+            Channel to set, 0-indexed.
+
+        Returns
+        -------
+        offset : float
+            Cold junction compensation offset in ADC counts (-9999 to 9999).
+        """
+        offset = self.instr.read_holding_registers(491 + channel, 1)[0]
+
+        # re-scale from -9999 to 9999
+        if (offset & (1 << (16 - 1))) != 0:
+            offset -= 1 << 16
+
+        return offset
+
     def enable_ai(self, channel, enable):
         """Enable or disable an analog input.
 
@@ -295,3 +350,21 @@ class pet7018z:
             raise ValueError(f"Invalid power line frequency: {plf}. Must be 50 or 60.")
 
         self.instr.write_single_coil(629, cmd)
+
+    def enable_calibration(self, enable):
+        """Enable/disable AI calibration mode.
+
+        Parameters
+        ----------
+        enable : bool
+            Enable (`True`) or disable (`False`) AI calibration mode.
+        """
+        self.instr.write_single_coil(830, enable)
+
+    def zero_calibration(self):
+        """Record the 0 V or 0 mA calibration value."""
+        self.instr.write_single_coil(831, True)
+
+    def span_calibration(self):
+        """Record the span (positive full range) calibration value."""
+        self.instr.write_single_coil(831, True)
