@@ -48,6 +48,10 @@ class pet7018z:
         """
         self.disconnect()
 
+    def __init__(self):
+        """Construct object."""
+        self.instr = None
+
     def connect(self, ip_address, port, timeout=30, reset=True):
         """Connect to the instrument.
 
