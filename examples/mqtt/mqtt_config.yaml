@@ -1,0 +1,23 @@
+daq:
+  ip_address: "192.168.0.25"
+  # modbus port
+  port: 502
+  # comms timeout in seconds
+  timeout: 5
+  # power line frequency in Hz, must be 50 or 60
+  plf: 50
+  # daq channels in use (keys) and their analog input ranges (values)
+  # e.g. 5: 15 means channel 5 is type K thermocouple
+  # valid analog input ranges:
+  # 0 = +/-15 mV
+  # 1 = +/-50 mV
+  # 2 = +/-100 mV
+  # 3 = +/-500 mV
+  # 4 = +/-1 V
+  # 5 = +/-2.5 V
+  # 15 = Type K, -270 - 1372 degC
+  channels:
+    5: 15
+    6: 5
+  # in continuous measurement mode, wait this many seconds between measurements
+  delay: 2

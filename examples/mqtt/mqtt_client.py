@@ -4,16 +4,20 @@ import argparse
 import collections
 import pickle
 import queue
+import pathlib
 import threading
 import time
 import traceback
 import uuid
+import sys
 
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 
 from mqtt_tools.queue_publisher import MQTTQueuePublisher
-import pet7018z
+
+sys.path.insert(1, str(pathlib.Path.cwd().parent.joinpath("src")))
+import pet7018z.pet7018z as pet7018z
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
