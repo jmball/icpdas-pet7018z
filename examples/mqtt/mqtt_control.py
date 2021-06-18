@@ -40,5 +40,8 @@ publish.single(
 
 # send run complete message
 publish.single(
-    "measurement/log", pickle.dumps("Run complete!"), qos=2, hostname="127.0.0.1",
+    "measurement/log",
+    pickle.dumps({"msg": "Run complete!"}),
+    qos=2,
+    hostname="127.0.0.1",
 )

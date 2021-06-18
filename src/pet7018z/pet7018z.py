@@ -14,27 +14,135 @@ class pet7018z:
     """
 
     ai_ranges = {
-        0: {"min": -15e-3, "max": 15e-3, "unit": "V"},
-        1: {"min": -50e-3, "max": 50e-3, "unit": "V"},
-        2: {"min": -100e-3, "max": 100e-3, "unit": "V"},
-        3: {"min": -500e-3, "max": 500e-3, "unit": "V"},
-        4: {"min": -1, "max": 1, "unit": "V"},
-        5: {"min": -2.5, "max": 2.5, "unit": "V"},
-        6: {"min": -20, "max": 20, "unit": "mA"},
-        7: {"min": 4, "max": 20, "unit": "mA"},
-        14: {"min": -210, "max": 760, "unit": "degC"},
-        15: {"min": -270, "max": 1372, "unit": "degC"},
-        16: {"min": -270, "max": 400, "unit": "degC"},
-        17: {"min": -270, "max": 1000, "unit": "degC"},
-        18: {"min": 0, "max": 1768, "unit": "degC"},
-        19: {"min": 0, "max": 1768, "unit": "degC"},
-        20: {"min": 0, "max": 1820, "unit": "degC"},
-        21: {"min": -270, "max": 1300, "unit": "degC"},
-        22: {"min": 0, "max": 2320, "unit": "degC"},
-        23: {"min": -200, "max": 800, "unit": "degC"},
-        24: {"min": -200, "max": 100, "unit": "degC"},
-        25: {"min": -200, "max": 900, "unit": "degC"},
-        26: {"min": 0, "max": 20, "unit": "mA"},
+        0: {
+            "min": -15e-3,
+            "max": 15e-3,
+            "unit": "V",
+            "hex_max": 0x7FFF,
+            "hex_min": 0x8000,
+        },
+        1: {
+            "min": -50e-3,
+            "max": 50e-3,
+            "unit": "V",
+            "hex_max": 0x7FFF,
+            "hex_min": 0x8000,
+        },
+        2: {
+            "min": -100e-3,
+            "max": 100e-3,
+            "unit": "V",
+            "hex_max": 0x7FFF,
+            "hex_min": 0x8000,
+        },
+        3: {
+            "min": -500e-3,
+            "max": 500e-3,
+            "unit": "V",
+            "hex_max": 0x7FFF,
+            "hex_min": 0x8000,
+        },
+        4: {"min": -1, "max": 1, "unit": "V", "hex_max": 0x7FFF, "hex_min": 0x8000},
+        5: {"min": -2.5, "max": 2.5, "unit": "V", "hex_max": 0x7FFF, "hex_min": 0x8000},
+        6: {
+            "min": -20e-3,
+            "max": 20e-3,
+            "unit": "A",
+            "hex_max": 0x7FFF,
+            "hex_min": 0x8000,
+        },
+        7: {
+            "min": 4e-3,
+            "max": 20e-3,
+            "unit": "A",
+            "hex_max": 0xFFFF,
+            "hex_min": 0x0000,
+        },
+        14: {
+            "min": -210,
+            "max": 760,
+            "unit": "degC",
+            "hex_max": 0x7FFF,
+            "hex_min": 0xDCA2,
+        },
+        15: {
+            "min": -270,
+            "max": 1372,
+            "unit": "degC",
+            "hex_max": 0x7FFF,
+            "hex_min": 0xE6D0,
+        },
+        16: {
+            "min": -270,
+            "max": 400,
+            "unit": "degC",
+            "hex_max": 0x7FFF,
+            "hex_min": 0xA99A,
+        },
+        17: {
+            "min": -270,
+            "max": 1000,
+            "unit": "degC",
+            "hex_max": 0x7FFF,
+            "hex_min": 0xDD71,
+        },
+        18: {
+            "min": 0,
+            "max": 1768,
+            "unit": "degC",
+            "hex_max": 0x7FFF,
+            "hex_min": 0x0000,
+        },
+        19: {
+            "min": 0,
+            "max": 1768,
+            "unit": "degC",
+            "hex_max": 0x7FFF,
+            "hex_min": 0x0000,
+        },
+        20: {
+            "min": 0,
+            "max": 1820,
+            "unit": "degC",
+            "hex_max": 0x7FFF,
+            "hex_min": 0x0000,
+        },
+        21: {
+            "min": -270,
+            "max": 1300,
+            "unit": "degC",
+            "hex_max": 0x7FFF,
+            "hex_min": 0xE56B,
+        },
+        22: {
+            "min": 0,
+            "max": 2320,
+            "unit": "degC",
+            "hex_max": 0x7FFF,
+            "hex_min": 0x0000,
+        },
+        23: {
+            "min": -200,
+            "max": 800,
+            "unit": "degC",
+            "hex_max": 0x7FFF,
+            "hex_min": 0xE000,
+        },
+        24: {
+            "min": -200,
+            "max": 100,
+            "unit": "degC",
+            "hex_max": 0x4000,
+            "hex_min": 0x8000,
+        },
+        25: {
+            "min": -200,
+            "max": 900,
+            "unit": "degC",
+            "hex_max": 0xFFFF,
+            "hex_min": 0xE38E,
+        },
+        26: {"min": 0, "max": 20e-3, "unit": "A", "hex_min": 0xFFFF, "hex_max": 0x0000},
     }
 
     def __enter__(self):
@@ -71,6 +179,9 @@ class pet7018z:
 
         if reset is True:
             self.reset()
+
+        # measure method assumes hex format
+        self.set_ai_data_format("hex")
 
     def disconnect(self):
         """Disconnect the instrument."""
@@ -140,13 +251,7 @@ class pet7018z:
         eng : float
             Value in engineering units.
         """
-        # convert to signed integer using two's complement
-        # this rescales the value from -32768 to 32767 (16 bit)
-        if (value & (1 << (16 - 1))) != 0:
-            value -= 1 << 16
-
-        # re-scale from 0 to 2^16 - 1
-        value += 32768
+        value = self._twos_complement(value)
 
         # get range setting params
         ai_range_setting = self.ai_ranges[self.get_ai_range(channel)]
@@ -154,10 +259,35 @@ class pet7018z:
         ai_range_max = ai_range_setting["max"]
         ai_range = ai_range_max - ai_range_min
 
-        # normalise
-        eng = (value * ai_range / (2 ** 16 - 1)) + ai_range_min
+        hex_range_min = self._twos_complement(ai_range_setting["hex_min"])
+        hex_range_max = self._twos_complement(ai_range_setting["hex_max"])
+        hex_range = hex_range_max - hex_range_min
+
+        # eng units per adc count
+        units_per_count = ai_range / hex_range
+
+        eng = value * units_per_count
 
         return eng
+
+    def _twos_complement(self, value):
+        """Calculate decimal value from signed 2's complement.
+
+        Parameters
+        ----------
+        value : int
+            Decimal value from instrument.
+
+        Returns
+        -------
+        value : int
+            Signed decimal value derived from hex 2's complement.
+        """
+        # rescale the value from -32768 to 32767 (16 bit)
+        if (value & (1 << (16 - 1))) != 0:
+            value -= 1 << 16
+
+        return value
 
     def _eng_to_adc(self, channel, eng):
         """Convert a number to an ADC value expected by the instrument.
@@ -178,11 +308,14 @@ class pet7018z:
         ai_range_max = ai_range_setting["max"]
         ai_range = ai_range_max - ai_range_min
 
-        # un-normalise
-        value = (eng - ai_range_min) * (2 ** 16 - 1) / ai_range
+        hex_range_min = self._twos_complement(ai_range_setting["hex_min"])
+        hex_range_max = self._twos_complement(ai_range_setting["hex_max"])
+        hex_range = hex_range_max - hex_range_min
 
-        # re-scale from -32768 to 32767
-        value -= 32768
+        # eng units per adc count
+        units_per_count = ai_range / hex_range
+
+        value = eng / units_per_count
 
         # re-scale from 0 to 65535 using two's complement
         if value < 0:
@@ -321,8 +454,7 @@ class pet7018z:
         offset = self.instr.read_holding_registers(491 + channel, 1)[0]
 
         # re-scale from -9999 to 9999
-        if (offset & (1 << (16 - 1))) != 0:
-            offset -= 1 << 16
+        offset = self._twos_complement(offset)
 
         return offset
 
@@ -354,6 +486,25 @@ class pet7018z:
             raise ValueError(f"Invalid power line frequency: {plf}. Must be 50 or 60.")
 
         self.instr.write_single_coil(629, cmd)
+
+    def set_ai_data_format(self, data_format):
+        """Set analog input data format.
+
+        Paramters
+        ---------
+        data_format : str
+            Hexadecimal ("hex") or engineering unit ("eng") format.
+        """
+        if data_format == "hex":
+            cmd = False
+        elif data_format == "eng":
+            cmd = True
+        else:
+            raise ValueError(
+                f"Invalid AI data format: {data_format}. Must be 'hex' or 'eng'."
+            )
+
+        self.instr.write_single_coil(631, cmd)
 
     def enable_calibration(self, enable):
         """Enable/disable AI calibration mode.

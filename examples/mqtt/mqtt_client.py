@@ -16,7 +16,7 @@ import paho.mqtt.publish as publish
 
 from mqtt_tools.queue_publisher import MQTTQueuePublisher
 
-sys.path.insert(1, str(pathlib.Path.cwd().parent.joinpath("src")))
+sys.path.insert(1, str(pathlib.Path.cwd().parent.parent.joinpath("src")))
 import pet7018z.pet7018z as pet7018z
 
 parser = argparse.ArgumentParser()
@@ -55,11 +55,15 @@ def worker():
 
         payload = pickle.loads(msg.payload)
 
+        print(payload)
+
         # handle continuous start/stop
         if msg.topic == "daq/start":
             start.append(True)
+            print("Starting continuous mode...")
         elif msg.topic == "daq/stop":
             start.append(False)
+            print("Continuous mode stopped.")
         elif msg.topic == "measurement/log":
             if payload["msg"] == "Run complete!" or payload["msg"].startswith(
                 "RUN ABORTED!"
@@ -70,6 +74,7 @@ def worker():
                 # wait for measurement delay + 1s to ensure last measurement
                 # finishes
                 time.sleep(config["daq"]["delay"] + 1)
+                print(payload["msg"])
         elif msg.topic == "daq/single":
             if start[0] is False:
                 single()
@@ -79,6 +84,7 @@ def worker():
                 )
         elif msg.topic == "measurement/run":
             if start[0] is False:
+                print("Received run message")
                 read_config(payload)
                 setup()
             else:
@@ -170,14 +176,18 @@ def setup():
 
         print(f"Connected to '{daq.get_id()}'!")
 
+        # disable all analog inputs
+        for channel in range(10):
+            daq.enable_ai(channel, False)
+
         # global settings
         daq.set_ai_noise_filter(config["daq"]["plf"])
         daq.enable_cjc(True)
 
-        # setup the analog inputs
+        # setup and enable the analog inputs in use
         for channel, ai_range in config["daq"]["channels"].items():
-            daq.enable_ai(channel, True)
             daq.set_ai_range(channel, ai_range)
+            daq.enable_ai(channel, True)
     except Exception as e:
         traceback.print_exc()
         log("DAQ setup failed! " + str(e), 40)
@@ -201,21 +211,9 @@ mqttc.will_set("daq/status", pickle.dumps(f"{client_id} offline"), 2, retain=Tru
 mqttc.on_message = on_message
 mqttc.connect(args.mqtthost)
 mqttc.subscribe("measurement/#", qos=2)
+mqttc.subscribe("daq/#", qos=2)
 publish.single(
     "daq/status", pickle.dumps(f"{client_id} ready"), qos=2, hostname=args.mqtthost,
 )
 print(f"{client_id} connected!")
 mqttc.loop_forever()
-
-
-# daq dict
-# {
-#   "ip_address": ,
-#   "port":,
-#   "timeout": ,
-#   "plf": ,
-#   "delay": ,
-#   "channels": {
-#       0: ai_range,
-#   }
-# }
