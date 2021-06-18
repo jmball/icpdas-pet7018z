@@ -52,7 +52,7 @@ class pet7018z:
         """Construct object."""
         self.instr = None
 
-    def connect(self, ip_address, port, timeout=30, reset=True):
+    def connect(self, ip_address, port=502, timeout=30, reset=True):
         """Connect to the instrument.
 
         Parameters
@@ -60,7 +60,7 @@ class pet7018z:
         ip_address : str
             Instrument IP address.
         port : int
-            Instrument port.
+            Instrument port. Default for Modbus is 502.
         timeout : float
             Comms timeout in seconds.
         reset : bool, optional
