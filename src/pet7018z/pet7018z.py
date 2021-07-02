@@ -160,13 +160,13 @@ class pet7018z:
         """Construct object."""
         self.instr = None
 
-    def connect(self, ip_address, port=502, timeout=30, reset=True):
+    def connect(self, host, port=502, timeout=30, reset=True):
         """Connect to the instrument.
 
         Parameters
         ----------
-        ip_address : str
-            Instrument IP address.
+        host : str
+            Instrument host.
         port : int
             Instrument port. Default for Modbus is 502.
         timeout : float
@@ -174,7 +174,7 @@ class pet7018z:
         reset : bool, optional
             Reset the instrument to the built-in default configuration.
         """
-        self.instr = pyModbusTCP.client.ModbusClient(ip_address, port, timeout=timeout)
+        self.instr = pyModbusTCP.client.ModbusClient(host, port, timeout=timeout)
         self.instr.open()
 
         if reset is True:

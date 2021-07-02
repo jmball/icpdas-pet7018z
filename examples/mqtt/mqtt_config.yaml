@@ -1,5 +1,5 @@
 daq:
-  ip_address: "192.168.0.25"
+  host: "arkmetricadaq956"
   # modbus port
   port: 502
   # comms timeout in seconds
