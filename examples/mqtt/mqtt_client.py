@@ -89,6 +89,15 @@ def worker():
                 setup()
             else:
                 log("Cannot update config/setup: DAQ running in continuous mode.", 30)
+        elif msg.topic == "measurement/status":
+            if (payload["msg"] == "Offline") or (payload["msg"] == "Ready"):
+                # make sure continuous mode stops
+                start.append(False)
+
+                # wait for measurement delay + 1s to ensure last measurement
+                # finishes
+                time.sleep(config["daq"]["delay"] + 1)
+                print(payload["msg"])
 
         q.task_done()
 
