@@ -177,7 +177,7 @@ def setup():
     try:
         if daq.instr is None:
             daq.connect(
-                config["daq"]["ip_address"],
+                config["daq"]["host"],
                 config["daq"]["port"],
                 config["daq"]["timeout"],
                 True,
