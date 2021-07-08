@@ -205,6 +205,7 @@ def setup():
         for channel, ai_range in config["daq"]["channels"].items():
             daq.set_ai_range(channel, ai_range)
             daq.enable_ai(channel, True)
+            print(f"Set range: {daq.get_ai_range(channel)}")
     except Exception as e:
         traceback.print_exc()
         log("DAQ setup failed! " + str(e), 40)
