@@ -55,8 +55,6 @@ def worker():
 
         payload = pickle.loads(msg.payload)
 
-        print(payload)
-
         # handle continuous start/stop
         if msg.topic == "daq/start":
             start.append(True)
