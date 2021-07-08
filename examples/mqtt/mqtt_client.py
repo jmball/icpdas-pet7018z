@@ -202,14 +202,10 @@ def setup():
         daq.enable_cjc(True)
 
         # setup and enable the analog inputs in use
-        print(f"DAQ channel settings: {config['daq']['channels']}")
         for channel, ai_range in config["daq"]["channels"].items():
             daq.enable_ai(channel, True)
             daq.set_ai_range(channel, ai_range)
             time.sleep(0.1)
-            print(
-                f"Requested range: {ai_range}, set range: {daq.get_ai_range(channel)}"
-            )
     except Exception as e:
         traceback.print_exc()
         log("DAQ setup failed! " + str(e), 40)
