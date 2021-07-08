@@ -68,13 +68,17 @@ def worker():
             if payload["msg"] == "Run complete!" or payload["msg"].startswith(
                 "RUN ABORTED!"
             ):
-                # make sure continuous mode stops
-                start.append(False)
+                if start[0] is True:
+                    # make sure continuous mode stops
+                    start.append(False)
 
-                # wait for measurement delay + 1s to ensure last measurement
-                # finishes
-                time.sleep(config["daq"]["delay"] + 1)
-                print(payload["msg"])
+                    # wait for measurement delay + 1s to ensure last measurement
+                    # finishes
+                    try:
+                        time.sleep(config["daq"]["delay"] + 1)
+                    except IndexError:
+                        time.sleep(1)
+                    print(payload["msg"])
         elif msg.topic == "daq/single":
             if start[0] is False:
                 single()
@@ -91,13 +95,17 @@ def worker():
                 log("Cannot update config/setup: DAQ running in continuous mode.", 30)
         elif msg.topic == "measurement/status":
             if (payload == "Offline") or (payload == "Ready"):
-                # make sure continuous mode stops
-                start.append(False)
+                if start[0] is True:
+                    # make sure continuous mode stops
+                    start.append(False)
 
-                # wait for measurement delay + 1s to ensure last measurement
-                # finishes
-                time.sleep(config["daq"]["delay"] + 1)
-                print(payload["msg"])
+                    # wait for measurement delay + 1s to ensure last measurement
+                    # finishes
+                    try:
+                        time.sleep(config["daq"]["delay"] + 1)
+                    except IndexError:
+                        time.sleep(1)
+                    print(payload["msg"])
 
         q.task_done()
 
