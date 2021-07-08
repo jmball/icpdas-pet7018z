@@ -76,7 +76,7 @@ def worker():
                     # finishes
                     try:
                         time.sleep(config["daq"]["delay"] + 1)
-                    except IndexError:
+                    except KeyError:
                         time.sleep(1)
                     print(payload["msg"])
         elif msg.topic == "daq/single":
@@ -103,7 +103,7 @@ def worker():
                     # finishes
                     try:
                         time.sleep(config["daq"]["delay"] + 1)
-                    except IndexError:
+                    except KeyError:
                         time.sleep(1)
                     print(payload["msg"])
 
