@@ -90,7 +90,7 @@ def worker():
             else:
                 log("Cannot update config/setup: DAQ running in continuous mode.", 30)
         elif msg.topic == "measurement/status":
-            if (payload["msg"] == "Offline") or (payload["msg"] == "Ready"):
+            if (payload == "Offline") or (payload == "Ready"):
                 # make sure continuous mode stops
                 start.append(False)
 
