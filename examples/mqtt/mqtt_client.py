@@ -81,20 +81,20 @@ def worker():
             start.append(False)
             logger.info("Continuous mode stopped.")
         elif msg.topic == "measurement/log":
-            if payload["msg"] == "Run complete!" or payload["msg"].startswith(
-                "RUN ABORTED!"
-            ):
-                if start[0] is True:
-                    # make sure continuous mode stops
-                    start.append(False)
+            if (
+                payload["msg"] == "Run complete!"
+                or payload["msg"].startswith("RUN ABORTED!")
+            ) and start[0] is True:
+                # make sure continuous mode stops
+                start.append(False)
 
-                    # wait for measurement delay + 1s to ensure last measurement
-                    # finishes
-                    try:
-                        time.sleep(config["daq"]["delay"] + 1)
-                    except KeyError:
-                        time.sleep(1)
-                    logger.info(payload["msg"])
+                # wait for measurement delay + 1s to ensure last measurement
+                # finishes
+                try:
+                    time.sleep(config["daq"]["delay"] + 1)
+                except KeyError:
+                    time.sleep(1)
+                logger.info(payload["msg"])
         elif msg.topic == "daq/single":
             if start[0] is False:
                 single()
@@ -110,18 +110,17 @@ def worker():
             else:
                 log("Cannot update config/setup: DAQ running in continuous mode.", 30)
         elif msg.topic == "measurement/status":
-            if (payload == "Offline") or (payload == "Ready"):
-                if start[0] is True:
-                    # make sure continuous mode stops
-                    start.append(False)
+            if payload in ["Offline", "Ready"] and start[0] is True:
+                # make sure continuous mode stops
+                start.append(False)
 
-                    # wait for measurement delay + 1s to ensure last measurement
-                    # finishes
-                    try:
-                        time.sleep(config["daq"]["delay"] + 1)
-                    except KeyError:
-                        time.sleep(1)
-                    logger.info(payload["msg"])
+                # wait for measurement delay + 1s to ensure last measurement
+                # finishes
+                try:
+                    time.sleep(config["daq"]["delay"] + 1)
+                except KeyError:
+                    time.sleep(1)
+                logger.info(payload["msg"])
 
         q.task_done()
 
