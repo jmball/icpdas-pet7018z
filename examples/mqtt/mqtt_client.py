@@ -8,7 +8,6 @@ import queue
 import pathlib
 import threading
 import time
-import traceback
 import uuid
 import sys
 
@@ -46,6 +45,9 @@ ch = logging.StreamHandler()
 ch.setLevel(LOG_LEVEL)
 ch.setFormatter(logging.Formatter("%(asctime)s|%(name)s|%(levelname)s|%(message)s"))
 logger.addHandler(ch)
+
+# give the client a unique name
+client_id = f"daq-{uuid.uuid4().hex}"
 
 # start queue publisher
 mqttqp = MQTTQueuePublisher()
@@ -197,17 +199,66 @@ def read_config(payload):
 
 def setup():
     """Set up the instrument for measurements."""
+    # try to connect to the daq with 10 retries
+    for _ in range(10):
+        try:
+            daq_id = daq.get_id()
+            err = None
+            conn_msg = f"Connected to device: '{daq_id}'!"
+            logger.info(conn_msg)
+            break
+        except AttributeError:
+            # the daq object isn't connected to the device so try to connect
+            try:
+                daq.connect(
+                    config["daq"]["host"],
+                    config["daq"]["port"],
+                    config["daq"]["timeout"],
+                    True,
+                )
+
+                daq_id = daq.get_id()
+                err = None
+                conn_msg = f"Connected to device: '{daq_id}'!"
+                logger.info(conn_msg)
+                break
+            except Exception as e:
+                err = e
+                conn_msg = "DAQ connection failed!"
+                logger.exception(conn_msg)
+
+                # wait before trying again
+                time.sleep(2)
+        except Exception as e:
+            err = e
+            conn_msg = "DAQ connection failed!"
+            logger.exception(conn_msg)
+
+            # the daq has previously been connected but now has an issue
+            try:
+                # try disconnecting daq and resetting its instr attribute to None
+                # before next loop iteration
+                daq.disconnect()
+            except Exception as e:
+                # the physical device may have been disconnected causing the
+                # disconnect method to fail so manually reset the instr to None
+                daq.instr = None
+                err = e
+                # if the last attempt fails on a disconnect there's no need to update
+                # the error message to send to mqtt logger, just send to local logger
+                logger.exception("DAQ disconnection failed!")
+
+            # wait before trying again
+            time.sleep(2)
+
+    # report daq connection status
+    if err is None:
+        log(conn_msg, 20)
+    else:
+        log(conn_msg + " " + str(err), 40)
+        return
+
     try:
-        if daq.instr is None:
-            daq.connect(
-                config["daq"]["host"],
-                config["daq"]["port"],
-                config["daq"]["timeout"],
-                True,
-            )
-
-        logger.info(f"Connected to '{daq.get_id()}'!")
-
         # disable all analog inputs
         for channel in range(10):
             daq.enable_ai(channel, False)
@@ -220,10 +271,13 @@ def setup():
         for channel, ai_range in config["daq"]["channels"].items():
             daq.enable_ai(channel, True)
             daq.set_ai_range(channel, ai_range)
+
+            # trying to send messages too quickly sometimes causes errors
             time.sleep(0.1)
     except Exception as e:
-        traceback.print_exc()
-        log("DAQ setup failed! " + str(e), 40)
+        setup_msg = "DAQ setup failed!"
+        logger.exception(setup_msg)
+        log(setup_msg + " " + str(e), 40)
 
 
 def on_message(mqttc, obj, msg):
@@ -238,15 +292,19 @@ threading.Thread(target=worker, daemon=True).start()
 threading.Thread(target=continuous, daemon=True).start()
 
 # create mqtt client
-client_id = f"daq-{uuid.uuid4().hex}"
 mqttc = mqtt.Client(client_id)
-mqttc.will_set("daq/status", pickle.dumps(f"{client_id} offline"), 2, retain=True)
+mqttc.will_set(
+    "daq/status", pickle.dumps({"uuid": client_id, "mqtt": "offline"}), 2, retain=True,
+)
 mqttc.on_message = on_message
 mqttc.connect(args.mqtthost)
 mqttc.subscribe("measurement/#", qos=2)
 mqttc.subscribe("daq/#", qos=2)
 publish.single(
-    "daq/status", pickle.dumps(f"{client_id} ready"), qos=2, hostname=args.mqtthost,
+    "daq/status",
+    pickle.dumps({"uuid": client_id, "mqtt": "ready"}),
+    qos=2,
+    hostname=args.mqtthost,
 )
-logger.info(f"{client_id} connected!")
+logger.info(f"{client_id} MQTT client connected!")
 mqttc.loop_forever()
