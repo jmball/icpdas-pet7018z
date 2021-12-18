@@ -2,6 +2,7 @@
 
 import argparse
 import collections
+import logging
 import pickle
 import queue
 import pathlib
@@ -26,8 +27,25 @@ parser.add_argument(
     default="127.0.0.1",
     help="IP address or hostname for MQTT broker.",
 )
+parser.add_argument(
+    "--debug",
+    action="store_true",
+    default=False,
+    help="Log messages at debug log level.",
+)
 
 args = parser.parse_args()
+
+# set up logger
+logging.captureWarnings(True)
+logger = logging.getLogger()
+LOG_LEVEL = 10 if args.debug is True else 20
+logger.setLevel(LOG_LEVEL)
+
+ch = logging.StreamHandler()
+ch.setLevel(LOG_LEVEL)
+ch.setFormatter(logging.Formatter("%(asctime)s|%(name)s|%(levelname)s|%(message)s"))
+logger.addHandler(ch)
 
 # start queue publisher
 mqttqp = MQTTQueuePublisher()
@@ -58,10 +76,10 @@ def worker():
         # handle continuous start/stop
         if msg.topic == "daq/start":
             start.append(True)
-            print("Starting continuous mode...")
+            logger.info("Starting continuous mode...")
         elif msg.topic == "daq/stop":
             start.append(False)
-            print("Continuous mode stopped.")
+            logger.info("Continuous mode stopped.")
         elif msg.topic == "measurement/log":
             if payload["msg"] == "Run complete!" or payload["msg"].startswith(
                 "RUN ABORTED!"
@@ -76,7 +94,7 @@ def worker():
                         time.sleep(config["daq"]["delay"] + 1)
                     except KeyError:
                         time.sleep(1)
-                    print(payload["msg"])
+                    logger.info(payload["msg"])
         elif msg.topic == "daq/single":
             if start[0] is False:
                 single()
@@ -86,7 +104,7 @@ def worker():
                 )
         elif msg.topic == "measurement/run":
             if start[0] is False:
-                print("Received run message")
+                logger.info("Received run message")
                 read_config(payload)
                 setup()
             else:
@@ -103,7 +121,7 @@ def worker():
                         time.sleep(config["daq"]["delay"] + 1)
                     except KeyError:
                         time.sleep(1)
-                    print(payload["msg"])
+                    logger.info(payload["msg"])
 
         q.task_done()
 
@@ -189,7 +207,7 @@ def setup():
                 True,
             )
 
-        print(f"Connected to '{daq.get_id()}'!")
+        logger.info(f"Connected to '{daq.get_id()}'!")
 
         # disable all analog inputs
         for channel in range(10):
@@ -231,5 +249,5 @@ mqttc.subscribe("daq/#", qos=2)
 publish.single(
     "daq/status", pickle.dumps(f"{client_id} ready"), qos=2, hostname=args.mqtthost,
 )
-print(f"{client_id} connected!")
+logger.info(f"{client_id} connected!")
 mqttc.loop_forever()
