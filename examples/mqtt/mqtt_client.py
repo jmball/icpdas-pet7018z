@@ -13,6 +13,7 @@ import sys
 
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
+import pyvisa
 
 from mqtt_tools.queue_publisher import MQTTQueuePublisher
 
@@ -197,65 +198,66 @@ def read_config(payload):
     config = payload["config"]
 
 
+def attempt_connect():
+    """Attempt to connect to the DAQ and log the result."""
+    daq.connect(
+        config["daq"]["host"], config["daq"]["port"], config["daq"]["timeout"], True,
+    )
+
+    daq_id = daq.get_id()
+    err = None
+    conn_msg = f"Connected to device: '{daq_id}'!"
+    logger.info(conn_msg)
+
+    return err, conn_msg
+
+
 def setup():
     """Set up the instrument for measurements."""
-    # try to connect to the daq with 10 retries
-    for _ in range(10):
+    try:
+        # check if daq is already connected by querying its id
+        daq_id = daq.get_id()
+        err = None
+        conn_msg = f"Connected to device: '{daq_id}'!"
+        logger.info(conn_msg)
+    except AttributeError:
+        # the daq object hasn't previously connected to the device so try to connect
         try:
-            daq_id = daq.get_id()
-            err = None
-            conn_msg = f"Connected to device: '{daq_id}'!"
-            logger.info(conn_msg)
-            break
-        except AttributeError:
-            # the daq object isn't connected to the device so try to connect
-            try:
-                daq.connect(
-                    config["daq"]["host"],
-                    config["daq"]["port"],
-                    config["daq"]["timeout"],
-                    True,
-                )
-
-                daq_id = daq.get_id()
-                err = None
-                conn_msg = f"Connected to device: '{daq_id}'!"
-                logger.info(conn_msg)
-                break
-            except Exception as e:
-                err = e
-                conn_msg = "DAQ connection failed!"
-                logger.exception(conn_msg)
-
-                # wait before trying again
-                time.sleep(2)
+            err, conn_msg = attempt_connect()
         except Exception as e:
             err = e
             conn_msg = "DAQ connection failed!"
             logger.exception(conn_msg)
+    except Exception as e:
+        err = e
+        conn_msg = "DAQ connection failed!"
+        logger.exception(conn_msg)
 
-            # the daq has previously been connected but now has an issue
+        # the daq has previously been connected but now has an issue
+        try:
+            # try disconnecting daq object and connecting again
+            daq.disconnect()
+            err, conn_msg = attempt_connect()
+        except Exception as e:
+            err = e
+            logger.exception("DAQ disconnection failed!")
+            # the physical device may have been disconnected causing the disconnect
+            # method to fail so try to overwrite the connection with a new one
             try:
-                # try disconnecting daq and resetting its instr attribute to None
-                # before next loop iteration
-                daq.disconnect()
+                err, conn_msg = attempt_connect()
             except Exception as e:
-                # the physical device may have been disconnected causing the
-                # disconnect method to fail so manually reset the instr to None
-                daq.instr = None
                 err = e
-                # if the last attempt fails on a disconnect there's no need to update
-                # the error message to send to mqtt logger, just send to local logger
-                logger.exception("DAQ disconnection failed!")
-
-            # wait before trying again
-            time.sleep(2)
+                conn_msg = "DAQ connection failed!"
+                logger.exception(conn_msg)
 
     # report daq connection status
     if err is None:
         log(conn_msg, 20)
     else:
         log(conn_msg + " " + str(err), 40)
+        mqttqp.append_payload(
+            "daq/init", pickle.dumps({"uuid": client_id, "init_success": False})
+        )
         return
 
     try:
@@ -274,10 +276,17 @@ def setup():
 
             # trying to send messages too quickly sometimes causes errors
             time.sleep(0.1)
+
+        mqttqp.append_payload(
+            "daq/init", pickle.dumps({"uuid": client_id, "init_success": True})
+        )
     except Exception as e:
         setup_msg = "DAQ setup failed!"
         logger.exception(setup_msg)
         log(setup_msg + " " + str(e), 40)
+        mqttqp.append_payload(
+            "daq/init", pickle.dumps({"uuid": client_id, "init_success": False})
+        )
 
 
 def on_message(mqttc, obj, msg):

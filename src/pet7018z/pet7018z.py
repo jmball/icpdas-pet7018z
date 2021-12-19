@@ -186,7 +186,6 @@ class pet7018z:
     def disconnect(self):
         """Disconnect the instrument."""
         self.instr.close()
-        self.instr = None
 
     def get_id(self):
         """Get instrument identity string.
